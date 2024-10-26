@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Mail List
+{% endblock %}
+{% block body %}
+    <div class="content d-flex justify-content-center align-items-center">
+        <div class="">
+
+            <a class="d-block" href="{% url 'mail_extractor:mail_create_view' %}"> Добавить email </a>
+            <a class="d-block" href="{% url 'mail_extractor:user_logout_view' %}"> Выйти </a>
+
+            <h5>Список почт</h5>
+            {% if not mails %}
+                <h4>Вы не добавили ни одной почты</h4>
+            {% else %}
+                <ul>
+                    {% for item in mails %}
+                        <li><a class="d-block"
+                               href="{% url 'mail_extractor:mail_detail_view' pk=item.pk %}">{{ item.login }}</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+        </div>
+    </div>
+
+{% endblock %}
+

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Добавить почту
+{% endblock %}
+
+{% block body %}
+
+    <style>
+
+    </style>
+    <div class="d-flex justify-content-between">
+        <div class="load-info" id="load-info"></div>
+        <a href="{% url 'mail_extractor:mail_update_view' pk=mail.pk %}">{{ mail.login }}</a>
+        <a href="{% url 'mail_extractor:mail_list_view' %}">Назад</a>
+    </div>
+
+    <div class="progress">
+        <div id="progress-bar" class="progress-bar progress-bar-striped bg-info" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+    <div class="loader d-inline" id="loader"></div>
+    /
+    <div class="loader-default d-inline" id="loader-default"></div>
+    <table id="messages-table">
+        <thead>
+        <tr>
+            <th>Тема сообщения (наименование</th>
+            <th>Дата отправки</th>
+            <th>Дата получения</th>
+            <th>Описание или текст сообщения</th>
+            <th>Кол-во прикрепленных файлов</th>
+        </tr>
+        </thead>
+        <tbody id="messages-body">
+        </tbody>
+    </table>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+    $(document).ready(function() {
+        const host = window.location.hostname;
+        const port = window.location.port;
+        const wsPort = port ? port : (window.location.protocol === 'https:' ? '443' : '80');
+        const wsUrl = `ws://${host}:${wsPort}/ws/message-processing/`;
+        let socket = new WebSocket(wsUrl);
+
+        let $tableBody = $('#messages-body');
+        let $loadInfo = $('#load-info');
+        let $loader = $('#loader');
+        let $progressBar = $('#progress-bar');
+        let $loaderDefault = $('#loader-default');
+
+        socket.onopen = function(event) {
+            socket.send(JSON.stringify({
+                'login': '{{ mail.login }}',
+                'password': '{{ mail.password }}',
+                'server': '{{ mail.server.name }}'
+            }));
+        };
+
+        socket.onmessage = function(event) {
+            let data = JSON.parse(event.data);
+            let message = data.message;
+
+            if (data.status === 300) {
+                $loadInfo.text('чтение сообщений');
+            }
+            if (data.status === 400) {
+                $loadInfo.text('Проблема при получения данных, проверьте учетные данные');
+            }
+            if (data.status === 200) {
+                let countMessages = data.count_messages;
+                let loadMessages = data.load_messages;
+                $loaderDefault.text(countMessages);
+                $loadInfo.text('получение сообщений');
+                let progressUnit = 100 / countMessages;
+
+                $progressBar.css('width', `${(countMessages - loadMessages) * progressUnit}%`);
+                $loader.text(loadMessages);
+
+                const $row = $('<tr>');
+
+                const $cell2 = $('<td>').text(message.title);
+                $row.append($cell2);
+
+                const $cell3 = $('<td>').text(message.date_send);
+                $row.append($cell3);
+
+                const $cell4 = $('<td>').text(message.date_receiving);
+                $row.append($cell4);
+
+                const $cell5 = $('<td>').text(message.text_message.length > 150
+                    ? message.text_message.substring(0, 150) + '...'
+                    : message.text_message);
+                $row.append($cell5);
+
+                const $cell6 = $('<td>').text(message.files.length > 0 ? message.files.length : '');
+                $row.append($cell6);
+
+                // Добавление строки в тело таблицы
+                $tableBody.append($row);
+            }
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket Error: ', error);
+            $loader.text('Проблема при получения данных, проверьте учетные данные');
+        };
+    });
+</script>
+{% endblock %}
+

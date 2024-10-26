@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Добавить почту
+{% endblock %}
+{% block body %}
+<div class="content d-flex flex-column justify-content-center align-items-center">
+    <a href="{% url 'mail_extractor:mail_list_view' %}">Назад</a>
+    <h3>Добавьте почту</h3>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <button type="submit">Добавить почту</button>
+    </form>
+</div>
+
+{% endblock %}
